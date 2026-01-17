@@ -302,6 +302,11 @@ void Sub::one_hz_loop()
 
     attitude_control.set_notch_sample_rate(AP::scheduler().get_filtered_loop_rate_hz());
     pos_control.get_accel_z_pid().set_notch_sample_rate(AP::scheduler().get_filtered_loop_rate_hz());
+
+    gcs().send_text(MAV_SEVERITY_CRITICAL, 
+        "Current Depth: %.2f m",
+        (double)barometer.get_altitude()
+    );
 }
 
 void Sub::read_AHRS()
