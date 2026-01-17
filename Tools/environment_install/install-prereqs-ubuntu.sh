@@ -265,7 +265,7 @@ elif [ ${RELEASE_CODENAME} == 'lunar' ]; then
     SITL_PKGS+=" libpython3-stdlib" # for argparse
 elif [ ${RELEASE_CODENAME} == 'buster' ]; then
     SITL_PKGS+=" libpython3-stdlib" # for argparse
-elif [ ${RELEASE_CODENAME} != 'mantic' ]; then
+elif [ ${RELEASE_CODENAME} != 'mantic' ] && [ "$RELEASE_CODENAME" != "noble" ]; then
   SITL_PKGS+=" python-argparse"
 fi
 
