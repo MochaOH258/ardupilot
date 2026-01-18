@@ -746,6 +746,10 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("ORIGIN_ALT", 21, ParametersG2, backup_origin_alt, 0),
 
+    AP_GROUPINFO("para1", 22, ParametersG2, para1, 1),
+    AP_GROUPINFO("para2", 23, ParametersG2, para2, 1),
+    AP_GROUPINFO("para3", 24, ParametersG2, para3, 4),
+
     AP_GROUPEND
 };
 

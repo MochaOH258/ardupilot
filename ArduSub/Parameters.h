@@ -387,6 +387,10 @@ public:
     AP_Float backup_origin_lat;
     AP_Float backup_origin_lon;
     AP_Float backup_origin_alt;
+
+    AP_Int32 para1;
+    AP_Int16 para2;
+    AP_Float para3;
 };
 
 extern const AP_Param::Info        var_info[];
@@ -430,4 +434,6 @@ static const struct AP_Param::defaults_table_struct defaults_table[] = {
     { "SERVO9_FUNCTION",     59},    // k_rcin9, lights 1
     { "SERVO10_FUNCTION",    7},     // k_mount_tilt
 #endif
+
+
 };
