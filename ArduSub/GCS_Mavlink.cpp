@@ -30,6 +30,9 @@ MAV_MODE GCS_MAVLINK_Sub::base_mode() const
         // APM does in any mode, as that is defined as "system finds its own goal
         // positions", which APM does not currently do
         break;
+
+    case Mode::Number::CUSTOM1:
+    case Mode::Number::CUSTOM2:
     default:
         break;
     }

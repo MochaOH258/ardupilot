@@ -50,7 +50,9 @@ public:
         POSHOLD =      16,  // automatic position hold with manual override, with automatic throttle
         MANUAL =       19,  // Pass-through input with no stabilization
         MOTOR_DETECT = 20,  // Automatically detect motors orientation
-        SURFTRAK =     21   // Track distance above seafloor (hold range)
+        SURFTRAK =     21,   // Track distance above seafloor (hold range)
+        CUSTOM1 =      22,   //Star
+        CUSTOM2 =      23,   //square
     };
 
     // constructor
@@ -355,6 +357,70 @@ private:
     void guided_angle_control_start();
 };
 
+class ModeCustom1 : public Mode
+{
+
+public:
+    // inherit constructor
+    using Mode::Mode;
+
+    virtual void run() override;
+
+    bool init(bool ignore_checks) override;
+    bool requires_GPS() const override { return true; }
+    bool has_manual_throttle() const override { return false; }
+    bool allows_arming(bool from_gcs) const override { return true; }
+    bool is_autopilot() const override { return true; }
+
+     void guided_set_yaw_state(bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_angle);
+    float get_auto_heading();
+    void set_auto_yaw_mode(autopilot_yaw_mode yaw_mode);
+
+protected:
+
+    const char *name() const override { return "CUSTOM1"; }
+    const char *name4() const override { return "STAR"; }
+    autopilot_yaw_mode get_default_auto_yaw_mode(bool rtl) const;
+private:
+    void guided_pos_control_run();
+    void guided_pos_control_start();
+
+    Vector3f path[10];
+    int path_num;
+    void GeneratePath();
+};
+class ModeCustom2 : public Mode
+{
+
+public:
+    // inherit constructor
+    using Mode::Mode;
+
+    virtual void run() override;
+
+    bool init(bool ignore_checks) override;
+    bool requires_GPS() const override { return true; }
+    bool has_manual_throttle() const override { return false; }
+    bool allows_arming(bool from_gcs) const override { return true; }
+    bool is_autopilot() const override { return true; }
+
+     void guided_set_yaw_state(bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_angle);
+    float get_auto_heading();
+    void set_auto_yaw_mode(autopilot_yaw_mode yaw_mode);
+
+protected:
+
+    const char *name() const override { return "CUSTOM2"; }
+    const char *name4() const override { return "SQUA"; }
+    autopilot_yaw_mode get_default_auto_yaw_mode(bool rtl) const;
+private:
+    void guided_pos_control_run();
+    void guided_pos_control_start();
+
+    Vector3f path[10];
+    int path_num;
+    void GeneratePath();
+};
 
 
 class ModeAuto : public ModeGuided
