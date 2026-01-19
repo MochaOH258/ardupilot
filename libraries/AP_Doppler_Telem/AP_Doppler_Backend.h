@@ -7,6 +7,16 @@
 #define AP_DOPPLER_BAUD 115200
 #define AP_DOPPLER_BUFSIZE_RX 512
 #define AP_DOPPLER_BUFSIZE_TX 512
+#define AP_DOPPLER_START_BYTE ':'
+#define AP_DOPPLER_LAUNCH      "CS \r000000000000"  
+
+
+enum class DVL_LockState : uint8_t {
+    NO_LOCK = 0,
+    BOTTOM_LOCK = 1,
+    WATER_TRACK = 2,
+};
+
 
 class AP_Doppler_Backend
 {
@@ -19,6 +29,7 @@ public:
     virtual bool init();
     virtual void send();
     virtual void loop();
+    bool get_velocity_body(Vector3f &vel_body_mps, uint32_t &t_ms, float &quality, DVL_LockState &lock) const;
     typedef union {
         struct PACKED {
             uint8_t sensor;
@@ -36,12 +47,6 @@ public:
     }
 
     // get next telemetry data for external consumers of SPort data
-
-
-    
-
-
-
 
 protected:
 
@@ -105,7 +110,6 @@ protected:
         float z_velocity_mm_s;       // 向下
         Message_Status  status;             // A=有效，V=无效
     } BottomTrackShipVel;
-
 
     struct  {
         const char* FLAGS = "BD";
@@ -171,6 +175,8 @@ private:
     void parse_WE(const char *payload);
     void parse_WD(const char *payload);
 
+    uint32_t last_bs_update_ms = 0;
+    uint32_t last_ws_update_ms = 0;
     
 
 };

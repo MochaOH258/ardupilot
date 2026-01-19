@@ -17,6 +17,7 @@
 #include "AP_Doppler_Telem.h"
 
 #include <AP_HAL/AP_HAL.h>
+#include <AP_Math/AP_Math.h>
 #include <AP_Param/AP_Param.h>
 
 class AP_Doppler_Telem;
@@ -30,8 +31,13 @@ public:
     // parameters
     static const struct AP_Param::GroupInfo var_info[];
 
-private:
-    // settable parameters
-    AP_Int8 _options;
-};
 
+
+
+
+private:
+    AP_Int8 _options;
+
+    // settable parameters
+
+};

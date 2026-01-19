@@ -16,14 +16,14 @@
 
 
 const AP_Param::GroupInfo AP_Doppler_Parameters::var_info[] = {
-    
-
+   
     // @Param: OPTIONS
     // @DisplayName: Doppler Telemetry Options
     // @Description: A bitmask to set some Doppler Telemetry specific options
     // @Bitmask: 0:EnableAirspeedAndGroundspeed
     // @User: Standard
-    AP_GROUPINFO("OPTIONS", 1, AP_Doppler_Parameters, _options, 0),
+    AP_GROUPINFO("OPTIONS", 1, AP_Doppler_Parameters, _options, 1),
+
     AP_GROUPEND
 };
 
@@ -31,5 +31,4 @@ AP_Doppler_Parameters::AP_Doppler_Parameters()
 {
     AP_Param::setup_object_defaults(this, var_info);
 }
-
 

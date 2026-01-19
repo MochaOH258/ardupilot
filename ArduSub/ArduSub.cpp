@@ -105,7 +105,7 @@ const AP_Scheduler::Task Sub::scheduler_tasks[] = {
 #if AP_GRIPPER_ENABLED
     SCHED_TASK_CLASS(AP_Gripper,          &sub.g2.gripper,   update,              10,  75,  75),
 #endif
-    SCHED_TASK(doppler_update,        0.1,   100,  74),
+    SCHED_TASK(doppler_update,         1,    100,  74),
 #if STATS_ENABLED == ENABLED
     SCHED_TASK(stats_update,           1,    200,  76),
 #endif
@@ -184,6 +184,20 @@ void Sub::update_batt_compass()
 void Sub::doppler_update()
 {
     inertial_doppler.update();
+
+    Vector3f vel_body_mps;
+    uint32_t t_ms = 0;
+    float quality = 0.0f;
+    DVL_LockState lock = DVL_LockState::NO_LOCK;
+    if (!inertial_doppler.get_velocity_body(vel_body_mps, t_ms, quality, lock)) {
+        return;
+    }
+
+    Vector3f vel_body_corr = vel_body_mps;
+
+    const Matrix3f &rot_bn = ahrs.get_rotation_body_to_ned();
+    const Vector3f vel_ned = rot_bn * vel_body_corr;
+    ahrs.writeExtNavVelData(vel_ned, 0, t_ms, 0);
 
     inertial_doppler.send();
 }

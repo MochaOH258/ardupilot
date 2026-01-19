@@ -1,5 +1,6 @@
 #include "AP_Doppler_Backend.h"
 
+#include <AP_HAL/AP_HAL.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <AP_Baro/AP_Baro.h>
 #include <AP_AHRS/AP_AHRS.h>
@@ -18,17 +19,18 @@ bool AP_Doppler_Backend::init()
 
 bool AP_Doppler_Backend::init_serial_port()
 {
-//    if (!hal.scheduler->thread_create(
-//            FUNCTOR_BIND_MEMBER(&AP_Doppler_Backend::loop, void),
-//            "Doppler",
-//            1024,
-//            AP_HAL::Scheduler::PRIORITY_UART,
-//            1)) {
-//        return false;
-//    }
+    if (!hal.scheduler->thread_create(
+            FUNCTOR_BIND_MEMBER(&AP_Doppler_Backend::loop, void),
+            "Doppler",
+            1024,
+            AP_HAL::Scheduler::PRIORITY_UART,
+            1)) {
+        return false;
+    }
     // we don't want flow control for either protocol
     _port->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
-    _port->begin(AP_DOPPLER_BAUD);
+    _port->begin(AP_DOPPLER_BAUD, AP_DOPPLER_BUFSIZE_RX, AP_DOPPLER_BUFSIZE_TX);
+    gcs().send_text(MAV_SEVERITY_INFO,"Doppler Telemetry Initialized");
     return true;
 }
 
@@ -42,49 +44,51 @@ void AP_Doppler_Backend::loop(void)
         return;
     }
     
+    _port->write((const uint8_t*)AP_DOPPLER_LAUNCH, 16);
 
-    if (_port->available() == 0) {
-        gcs().send_text(MAV_SEVERITY_WARNING, "Doppler: No Data");
-        return;
-    }
-
-    // 等待帧头 ':'
-    int ch;
-    while (_port->available() != 0) {
-        ch = _port->read();
-        if (ch == ':') 
-        {
-            
-            gcs().send_text(MAV_SEVERITY_WARNING, "Doppler: Find_message_head");
-            break;
-        }
-        
-    }
-
-    // 读取数据
-    char buffer[128];
-    uint8_t idx = 0;
-    while (idx < sizeof(buffer) - 1) {
+    while(true) {
         if (_port->available() == 0) {
-            break;
+            _port->write((const uint8_t*)AP_DOPPLER_LAUNCH, 16);
+            
         }
-        char c = _port->read();
-        if (c == '\n' || c == '\r') break;
-        buffer[idx++] = c;
-    }
-    buffer[idx] = '\0';
 
-    // 分发解析
-    if (strncmp(buffer, "SA", 2) == 0) parse_SA(buffer);
-    else if (strncmp(buffer, "TS", 2) == 0) parse_TS(buffer);
-    else if (strncmp(buffer, "BI", 2) == 0) parse_BI(buffer);
-    else if (strncmp(buffer, "BS", 2) == 0) parse_BS(buffer);
-    else if (strncmp(buffer, "BE", 2) == 0) parse_BE(buffer);
-    else if (strncmp(buffer, "BD", 2) == 0) parse_BD(buffer);
-    else if (strncmp(buffer, "WI", 2) == 0) parse_WI(buffer);
-    else if (strncmp(buffer, "WS", 2) == 0) parse_WS(buffer);
-    else if (strncmp(buffer, "WE", 2) == 0) parse_WE(buffer);
-    else if (strncmp(buffer, "WD", 2) == 0) parse_WD(buffer);
+        int ch;
+        while (_port->available() != 0) {
+            ch = _port->read();
+            if (ch == AP_DOPPLER_START_BYTE) 
+            {
+                
+                break;
+            }
+            
+        }
+
+        // 读取数据
+        char buffer[128];
+        uint8_t idx = 0;
+        while (idx < sizeof(buffer) - 1) {
+            if (_port->available() == 0) {
+                break;
+            }
+            char c = _port->read();
+            if (c == '\n' || c == '\r') break;
+            buffer[idx++] = c;
+        }
+        buffer[idx] = '\0';
+
+        // 分发解析
+        if (strncmp(buffer, "SA", 2) == 0) parse_SA(buffer);
+        else if (strncmp(buffer, "TS", 2) == 0) parse_TS(buffer);
+        else if (strncmp(buffer, "BI", 2) == 0) parse_BI(buffer);
+        else if (strncmp(buffer, "BS", 2) == 0) parse_BS(buffer);
+        else if (strncmp(buffer, "BE", 2) == 0) parse_BE(buffer);
+        else if (strncmp(buffer, "BD", 2) == 0) parse_BD(buffer);
+        else if (strncmp(buffer, "WI", 2) == 0) parse_WI(buffer);
+        else if (strncmp(buffer, "WS", 2) == 0) parse_WS(buffer);
+        else if (strncmp(buffer, "WE", 2) == 0) parse_WE(buffer);
+        else if (strncmp(buffer, "WD", 2) == 0) parse_WD(buffer);
+        hal.scheduler->delay(1);
+    }
 }
 
 
@@ -184,6 +188,7 @@ void AP_Doppler_Backend::parse_SA(const char *payload)
                 Posture_data.pitch_deg,
                 Posture_data.yaw_deg);
 */
+
 }
 
 void AP_Doppler_Backend::parse_TS(const char *payload)
@@ -236,6 +241,7 @@ void AP_Doppler_Backend::parse_BS(const char *payload)
     BottomTrackShipVel.y_velocity_mm_s = parse_float(p);
     BottomTrackShipVel.z_velocity_mm_s = parse_float(p);
     BottomTrackShipVel.status          = static_cast<Message_Status>(parse_char(p));
+    last_bs_update_ms = AP_HAL::millis();
 /*
     gcs().send_text(MAV_SEVERITY_INFO,
                 "Doppler: BS[%+.2f,%+.2f,%+.2f] mm/s",
@@ -243,6 +249,7 @@ void AP_Doppler_Backend::parse_BS(const char *payload)
                 BottomTrackShipVel.y_velocity_mm_s ,
                 BottomTrackShipVel.z_velocity_mm_s    );
 */
+
 }
 
 void AP_Doppler_Backend::parse_BE(const char *payload)
@@ -252,9 +259,6 @@ void AP_Doppler_Backend::parse_BE(const char *payload)
     BottomTrackEarthVel.north_velocity_mm_s = parse_float(p);
     BottomTrackEarthVel.up_velocity_mm_s    = parse_float(p);
     BottomTrackEarthVel.status              = static_cast<Message_Status>(parse_char(p));
-<<<<<<< HEAD
-    gcs().send_text(MAV_SEVERITY_INFO,"BE_success");
-=======
 
 /*
     gcs().send_text(MAV_SEVERITY_INFO,
@@ -264,7 +268,6 @@ void AP_Doppler_Backend::parse_BE(const char *payload)
                 BottomTrackEarthVel.up_velocity_mm_s    );
 */
 
->>>>>>> f756d5ecec... modify DVL drive
 }
 
 void AP_Doppler_Backend::parse_BD(const char *payload)
@@ -275,9 +278,6 @@ void AP_Doppler_Backend::parse_BD(const char *payload)
     BottomTrackDistance.up_distance_m          = parse_float(p);
     BottomTrackDistance.bottom_distance_m      = parse_float(p);
     BottomTrackDistance.time_since_valid_s     = parse_float(p);
-<<<<<<< HEAD
-    gcs().send_text(MAV_SEVERITY_INFO,"BD_success");
-=======
 
 /*
     gcs().send_text(MAV_SEVERITY_INFO,
@@ -287,7 +287,6 @@ void AP_Doppler_Backend::parse_BD(const char *payload)
                 BottomTrackDistance.up_distance_m    );
 */
 
->>>>>>> f756d5ecec... modify DVL drive
 }
 
 void AP_Doppler_Backend::parse_WI(const char *payload)
@@ -298,9 +297,6 @@ void AP_Doppler_Backend::parse_WI(const char *payload)
     WaterTrackInstrumentVel.z_velocity_mm_s     = parse_float(p);
     WaterTrackInstrumentVel.velocity_error_mm_s = parse_float(p);
     WaterTrackInstrumentVel.status              = static_cast<Message_Status>(parse_char(p));
-<<<<<<< HEAD
-    gcs().send_text(MAV_SEVERITY_INFO,"WI_success");
-=======
 
 /*
     gcs().send_text(MAV_SEVERITY_INFO,
@@ -310,7 +306,6 @@ void AP_Doppler_Backend::parse_WI(const char *payload)
                 WaterTrackInstrumentVel.z_velocity_mm_s    );
 */
 
->>>>>>> f756d5ecec... modify DVL drive
 }
 
 void AP_Doppler_Backend::parse_WS(const char *payload)
@@ -320,6 +315,7 @@ void AP_Doppler_Backend::parse_WS(const char *payload)
     WaterTrackShipVel.y_velocity_mm_s = parse_float(p);
     WaterTrackShipVel.z_velocity_mm_s = parse_float(p);
     WaterTrackShipVel.status          = static_cast<Message_Status>(parse_char(p));
+    last_ws_update_ms = AP_HAL::millis();
     gcs().send_text(MAV_SEVERITY_INFO,"WS_success");
 }
 
@@ -342,4 +338,35 @@ void AP_Doppler_Backend::parse_WD(const char *payload)
     WaterTrackEarthDist.center_distance_m   = parse_float(p);
     WaterTrackEarthDist.time_since_valid_s  = parse_float(p);
     gcs().send_text(MAV_SEVERITY_INFO,"WD_success");
+}
+
+
+
+bool AP_Doppler_Backend::get_velocity_body(Vector3f &vel_body_mps, uint32_t &t_ms, float &quality, DVL_LockState &lock) const
+{
+    lock = DVL_LockState::NO_LOCK;
+    quality = 0.0f;
+    t_ms = 0;
+
+    if (BottomTrackShipVel.status == STATUS_ACQUIRING && last_bs_update_ms != 0) {
+        vel_body_mps.x = BottomTrackShipVel.x_velocity_mm_s * 0.001f;
+        vel_body_mps.y = BottomTrackShipVel.y_velocity_mm_s * 0.001f;
+        vel_body_mps.z = BottomTrackShipVel.z_velocity_mm_s * 0.001f;
+        t_ms = last_bs_update_ms;
+        quality = 255.0f;
+        lock = DVL_LockState::BOTTOM_LOCK;
+        return true;
+    }
+
+    if (WaterTrackShipVel.status == STATUS_ACQUIRING && last_ws_update_ms != 0) {
+        vel_body_mps.x = WaterTrackShipVel.x_velocity_mm_s * 0.001f;
+        vel_body_mps.y = WaterTrackShipVel.y_velocity_mm_s * 0.001f;
+        vel_body_mps.z = WaterTrackShipVel.z_velocity_mm_s * 0.001f;
+        t_ms = last_ws_update_ms;
+        quality = 255.0f;
+        lock = DVL_LockState::WATER_TRACK;
+        return true;
+    }
+
+    return false;
 }
