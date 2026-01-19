@@ -218,6 +218,10 @@ public:
         LOWEHEISER_STARTER = 111,  // allows for manually running starter
         AHRS_TYPE =          112, // change AHRS_EKF_TYPE
 
+        MY_TEST_MESSAGE =    115,
+        MY_TEST_CHANNAL =    116,
+
+
         // if you add something here, make sure to update the documentation of the parameter in RC_Channel.cpp!
         // also, if you add an option >255, you will need to fix duplicate_options_exist
 
@@ -249,6 +253,8 @@ public:
         CAMERA_IMAGE_TRACKING = 174, // camera image tracking
         CAMERA_LENS =        175, // camera lens selection
         VFWD_THR_OVERRIDE =  176, // force enabled VTOL forward throttle method
+
+        
 
 
         // inputs from 200 will eventually used to replace RCMAP

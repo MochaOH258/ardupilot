@@ -246,7 +246,7 @@ const AP_Param::GroupInfo RC_Channel::var_info[] = {
     // @Values{Copter, Rover, Plane}: 212:Mount1 Roll, 213:Mount1 Pitch, 214:Mount1 Yaw, 215:Mount2 Roll, 216:Mount2 Pitch, 217:Mount2 Yaw
     // @Values{Copter, Rover, Plane}: 300:Scripting1, 301:Scripting2, 302:Scripting3, 303:Scripting4, 304:Scripting5, 305:Scripting6, 306:Scripting7, 307:Scripting8
     // @User: Standard
-    AP_GROUPINFO_FRAME("OPTION",  6, RC_Channel, option, 0, AP_PARAM_FRAME_COPTER|AP_PARAM_FRAME_ROVER|AP_PARAM_FRAME_PLANE|AP_PARAM_FRAME_BLIMP),
+    AP_GROUPINFO_FRAME("OPTION",  6, RC_Channel, option, 0, AP_PARAM_FRAME_COPTER|AP_PARAM_FRAME_ROVER|AP_PARAM_FRAME_PLANE|AP_PARAM_FRAME_BLIMP|AP_PARAM_FRAME_SUB),
 
     AP_GROUPEND
 };
@@ -290,6 +290,31 @@ bool RC_Channel::update(void)
     } else {
         return false;
     }
+
+    //here
+    int16_t opt = option.get(); 
+    if (opt == 115 || opt == 116) {
+        
+        if (radio_in > 1800) {
+            if (opt == 115) {
+                
+                hal.console->printf("CHANNEL %d TRIGGERED MSG (115)\n", ch_in+1);
+                gcs().send_text(MAV_SEVERITY_CRITICAL, "LOGIC 1 SUCCESS");
+            } else if (opt == 116) {
+                
+                AP::gps().force_disable(true);
+                
+            }
+        } else if (radio_in < 1200) {
+            if (opt == 116) {
+                
+                AP::gps().force_disable(false);
+                
+            }
+        }
+    }
+
+
 
     if (type_in == ControlType::RANGE) {
         control_in = pwm_to_range();
@@ -771,6 +796,9 @@ const RC_Channel::LookupTable RC_Channel::lookuptable[] = {
     { AUX_FUNC::CAMERA_AUTO_FOCUS, "Camera Auto Focus"},
     { AUX_FUNC::CAMERA_IMAGE_TRACKING, "Camera Image Tracking"},
     { AUX_FUNC::CAMERA_LENS, "Camera Lens"},
+
+    { AUX_FUNC::MY_TEST_MESSAGE, "Test Message"},
+    { AUX_FUNC::MY_TEST_CHANNAL, "GPS"},
 };
 
 /* lookup the announcement for switch change */
@@ -804,6 +832,7 @@ const char *RC_Channel::string_for_aux_pos(AuxSwitchPos pos) const
   read an aux channel. Return true if a switch has changed
  */
 bool RC_Channel::read_aux()
+     
 {
     const aux_func_t _option = (aux_func_t)option.get();
     if (_option == AUX_FUNC::DO_NOTHING) {
@@ -1247,6 +1276,9 @@ bool RC_Channel::run_aux_function(aux_func_t ch_option, AuxSwitchPos pos, AuxFun
 
 bool RC_Channel::do_aux_function(const aux_func_t ch_option, const AuxSwitchPos ch_flag)
 {
+    
+    
+
     switch (ch_option) {
 #if AP_FENCE_ENABLED
     case AUX_FUNC::FENCE:
@@ -1664,6 +1696,26 @@ bool RC_Channel::do_aux_function(const aux_func_t ch_option, const AuxSwitchPos 
         // monitored by the library itself
         break;
 
+
+    
+    case AUX_FUNC::MY_TEST_MESSAGE:
+    if (ch_flag == AuxSwitchPos::HIGH){
+        GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Test Message");
+    }
+    break;
+    case AUX_FUNC::MY_TEST_CHANNAL:
+     AP::gps().force_disable(ch_flag == AuxSwitchPos::HIGH);
+    if (ch_flag == AuxSwitchPos::HIGH){
+
+        GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Disable GPS");
+    }
+    else{
+
+        GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Enable GPS");
+    }
+    break;
+    
+    
     default:
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Invalid channel option (%u)", (unsigned int)ch_option);
         return false;
