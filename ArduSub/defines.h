@@ -52,7 +52,8 @@ enum LoggingParameters {
     LOG_DATA_INT32_MSG,
     LOG_DATA_UINT32_MSG,
     LOG_DATA_FLOAT_MSG,
-    LOG_GUIDEDTARGET_MSG
+    LOG_GUIDEDTARGET_MSG,
+    LOG_SENSOR_STATUS_MSG
 };
 
 #define MASK_LOG_ATTITUDE_FAST          (1<<0)
@@ -155,4 +156,3 @@ enum LoggingParameters {
 #define MAVLINK_SET_POS_TYPE_MASK_FORCE           (1<<9)
 #define MAVLINK_SET_POS_TYPE_MASK_YAW_IGNORE      (1<<10)
 #define MAVLINK_SET_POS_TYPE_MASK_YAW_RATE_IGNORE (1<<11)
-

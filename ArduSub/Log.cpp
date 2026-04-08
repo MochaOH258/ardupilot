@@ -203,6 +203,49 @@ void Sub::Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target
     logger.WriteBlock(&pkt, sizeof(pkt));
 }
 
+struct PACKED log_SensorStatus {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    uint8_t baro_instance;
+    float pressure_pa;
+    float temperature_c;
+    float depth_m;
+    float rangefinder_alt_m;
+    float inertial_alt_m;
+    int8_t rangefinder_quality_pct;
+    uint8_t depth_healthy;
+    uint8_t rangefinder_healthy;
+    uint8_t depth_sensor_present;
+};
+
+void Sub::Log_Write_SensorStatus()
+{
+    const uint8_t baro_instance = ap.depth_sensor_present ? depth_sensor_idx : barometer.get_primary();
+
+    int8_t rangefinder_quality_pct = -1;
+#if RANGEFINDER_ENABLED == ENABLED
+    if (rangefinder_state.enabled) {
+        rangefinder_quality_pct = rangefinder.signal_quality_pct_orient(ROTATION_PITCH_270);
+    }
+#endif
+
+    const struct log_SensorStatus pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_SENSOR_STATUS_MSG),
+        time_us                : AP_HAL::micros64(),
+        baro_instance          : baro_instance,
+        pressure_pa            : barometer.get_pressure(baro_instance),
+        temperature_c          : barometer.get_temperature(baro_instance),
+        depth_m                : barometer.get_altitude(baro_instance),
+        rangefinder_alt_m      : rangefinder_state.alt_cm * 0.01f,
+        inertial_alt_m         : inertial_nav.get_position_z_up_cm() * 0.01f,
+        rangefinder_quality_pct: rangefinder_quality_pct,
+        depth_healthy          : ap.depth_sensor_present ? (uint8_t)sensor_health.depth : (uint8_t)barometer.healthy(baro_instance),
+        rangefinder_healthy    : (uint8_t)rangefinder_state.alt_healthy,
+        depth_sensor_present   : (uint8_t)ap.depth_sensor_present
+    };
+    logger.WriteBlock(&pkt, sizeof(pkt));
+}
+
 // @LoggerMessage: CTUN
 // @Description: Control Tuning information
 // @Field: TimeUS: Time since system startup
@@ -260,6 +303,20 @@ void Sub::Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target
 // @Field: vY: Target velocity, Y-Axis
 // @Field: vZ: Target velocity, Z-Axis
 
+// @LoggerMessage: SENS
+// @Description: Depth and range-related sensor values
+// @Field: TimeUS: Time since system startup
+// @Field: BI: Barometer instance used for logging
+// @Field: Press: Pressure in pascals
+// @Field: Temp: Temperature in degrees Celsius
+// @Field: Depth: Depth sensor altitude/depth estimate in meters
+// @Field: RFAlt: Rangefinder altitude in meters
+// @Field: IAlt: Inertial altitude in meters
+// @Field: RFQ: Rangefinder signal quality in percent, -1 if unavailable
+// @Field: DH: Depth sensor healthy flag
+// @Field: RH: Rangefinder healthy flag
+// @Field: DSP: External depth sensor present flag
+
 // type and unit information can be found in
 // libraries/AP_Logger/Logstructure.h; search for "log_Units" for
 // units and "Format characters" for field type information
@@ -279,6 +336,8 @@ const struct LogStructure Sub::log_structure[] = {
       "DFLT",  "QBf",         "TimeUS,Id,Value", "s--", "F--" },
     { LOG_GUIDEDTARGET_MSG, sizeof(log_GuidedTarget),
       "GUIP",  "QBffffff",    "TimeUS,Type,pX,pY,pZ,vX,vY,vZ", "s-mmmnnn", "F-000000" },
+    { LOG_SENSOR_STATUS_MSG, sizeof(log_SensorStatus),
+      "SENS",  "QBfffffbBBB", "TimeUS,BI,Press,Temp,Depth,RFAlt,IAlt,RFQ,DH,RH,DSP", "s#---------", "F----------" },
 };
 
 void Sub::Log_Write_Vehicle_Startup_Messages()
