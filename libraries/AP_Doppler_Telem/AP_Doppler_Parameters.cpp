@@ -24,6 +24,28 @@ const AP_Param::GroupInfo AP_Doppler_Parameters::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("OPTIONS", 1, AP_Doppler_Parameters, _options, 1),
 
+    // @Param: MAV_EN
+    // @DisplayName: DVL MAVLink upload enable
+    // @Description: Enable custom DVL MAVLink message upload
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Advanced
+    AP_GROUPINFO("MAV_EN", 2, AP_Doppler_Parameters, _mav_en, 0),
+
+    // @Param: MAV_RATE
+    // @DisplayName: DVL MAVLink upload rate
+    // @Description: Unified DVL MAVLink upload rate in Hz
+    // @Range: 1 50
+    // @Units: Hz
+    // @User: Advanced
+    AP_GROUPINFO("MAV_RATE", 3, AP_Doppler_Parameters, _mav_rate_hz, 5),
+
+    // @Param: SIM_EN
+    // @DisplayName: DVL simulation enable
+    // @Description: Enable simulated DVL MAVLink cache updates for link bring-up without hardware
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Advanced
+    AP_GROUPINFO("SIM_EN", 4, AP_Doppler_Parameters, _sim_en, 0),
+
     AP_GROUPEND
 };
 
@@ -31,4 +53,3 @@ AP_Doppler_Parameters::AP_Doppler_Parameters()
 {
     AP_Param::setup_object_defaults(this, var_info);
 }
-
